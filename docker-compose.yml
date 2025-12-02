@@ -28,9 +28,9 @@ services:
     depends_on:
       - kafka
     environment:
-      WS_URL: wss://ws-fapi.binance.com/ws-fapi/v1
+      WS_URL: ${WS_URL}
       KAFKA_BROKER: kafka:9092
-      KAFKA_TOPIC: tick-events
+      KAFKA_TOPIC: ${KAFKA_TOPIC}
     restart: always
 
   redis:
@@ -49,11 +49,42 @@ services:
       - kafka
       - redis
     environment:
-      KAFKA_BROKER: kafka:9092
-      KAFKA_TOPIC: tick-events
-      KAFKA_GROUP_ID: redis-consumer
+      KAFKA_BROKER: ${KAFKA_BROKER}
+      KAFKA_TOPIC: ${KAFKA_TOPIC}
+      KAFKA_GROUP_ID: ${KAFKA_REDIS_GROUP_ID}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+    restart: always
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${PG_DATABASE}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  postgres-storage:
+    build: ./postgres-storage
+    container_name: postgres-storage
+    depends_on:
+      - kafka
+      - postgres
+    environment:
+      KAFKA_BROKER: ${KAFKA_BROKER}
+      KAFKA_TOPIC: ${KAFKA_TOPIC}
+      KAFKA_GROUP_ID: ${KAFKA_POSTGRES_GROUP_ID}
+      
+      PG_USER: ${PG_USER}
+      PG_HOST: ${PG_HOST}
+      PG_PASSWORD: ${PG_PASSWORD}
+      PG_DATABASE: ${PG_DATABASE}
+      PG_PORT: ${PG_PORT}
     restart: always
 
 volumes:
