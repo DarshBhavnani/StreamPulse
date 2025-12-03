@@ -13,6 +13,35 @@ const redisQueryClient = createRedisClient();
 
 let priceBuffer = {};
 
+app.get('/tokens', async (req, res) => {
+  try {
+    const result = await pgPool.query('SELECT DISTINCT symbol FROM ticks');
+    const tokens = result.rows.map(row => row.symbol);
+    res.json(tokens);
+  } catch (err) {
+    console.error('Postgres Token Error:', err);
+    res.status(500).json({ error: 'Failed to fetch tokens' });
+  }
+});
+
+// GET /history/BTCUSDT?limit=50
+app.get('/history/:symbol', async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const limit = parseInt(req.query.limit) || 100;
+
+    const result = await pgPool.query(
+      'SELECT * FROM candles WHERE symbol = $1 ORDER BY bucket_start DESC LIMIT $2',
+      [symbol, limit]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Postgres History Error:', err);
+    res.status(500).json({ error: 'Failed to fetch history' });
+  }
+});
+
+
 async function start() {
   await redisSubscriber.subscribe('live-updates');
   redisSubscriber.on('message', (channel, message) => {
@@ -23,7 +52,7 @@ async function start() {
     }
   });
 
-  const BROADCAST_INTERVAL = 800; 
+  const BROADCAST_INTERVAL = 400; 
   
   setInterval(() => {
     const symbols = Object.keys(priceBuffer);
@@ -45,28 +74,6 @@ io.on('connection', (socket) => {
   socket.on('join-symbol', (symbol) => {
     socket.join(symbol);
     console.log(`User ${socket.id} joined ${symbol}`);
-  });
-
-  socket.on('request-history', async ({ symbol, limit }) => {
-    try {
-      const res = await pgPool.query(
-        'SELECT * FROM ticks WHERE symbol = $1 ORDER BY timestamp DESC LIMIT $2',
-        [symbol, limit || 100]
-      );
-      socket.emit('history-data', res.rows);
-    } catch (err) {
-      console.error('Postgres Query Error:', err);
-    }
-  });
-
-  socket.on('request-active-symbols', async () => {
-    try {
-      const keys = await redisQueryClient.keys('*');
-      socket.emit('active-symbols', keys);
-    } catch (err) {
-      console.error('Redis Keys Error:', err);
-      socket.emit('error', 'Failed to fetch symbols');
-    }
   });
 });
 
