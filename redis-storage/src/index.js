@@ -9,6 +9,11 @@ async function storePrice(tick) {
     const key = tick.symbol;
     const value = tick.price.toString();
     await redis.set(key, value);
+    const payload = {
+        symbol: key,
+        price: value
+    };
+    await redis.publish('live-updates', JSON.stringify(payload));
     console.log(`[Redis] Updated: ${key} = ${value}`);
 } 
 
