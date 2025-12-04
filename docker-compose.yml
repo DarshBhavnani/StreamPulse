@@ -130,6 +130,25 @@ services:
       PG_PORT: ${PG_PORT}
     restart: always
 
+  frontend-service:
+    build:
+      context: ./frontend-service
+      dockerfile: Dockerfile
+    container_name: frontend-service
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend-gateway
+    environment:
+      VITE_API_BASE: "http://frontend-gateway:3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+
 volumes:
   pgdata:
   redisdata:
