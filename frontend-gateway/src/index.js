@@ -3,9 +3,12 @@ import http from'http';
 import { Server } from 'socket.io';
 import { createRedisClient } from './config/redisClient.js';
 import { pgPool } from './config/postgresClient.js';
-
+import cors from 'cors';
 
 const app = express();
+app.use(cors({
+  origin: "*",
+}));
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 const redisSubscriber = createRedisClient();
@@ -31,7 +34,7 @@ app.get('/history/:symbol', async (req, res) => {
     const limit = parseInt(req.query.limit) || 100;
 
     const result = await pgPool.query(
-      'SELECT * FROM candles WHERE symbol = $1 ORDER BY bucket_start DESC LIMIT $2',
+      'SELECT symbol, price, ts FROM ticks WHERE symbol = $1 ORDER BY ts DESC LIMIT $2',
       [symbol, limit]
     );
     res.json(result.rows);
