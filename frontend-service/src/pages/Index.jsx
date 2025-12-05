@@ -49,14 +49,33 @@ export default function Index(){
   }, [tokens]);
 
   return (
-    <div>
-      <h2>All Tokens</h2>
-      <table className="table">
-        <thead><tr><th>Token</th><th>Price</th></tr></thead>
-        <tbody>
-          {tokens.map(t => <TokenRow key={t} token={t} price={prices[t]} />)}
-        </tbody>
-      </table>
-    </div>
+    <>
+      <div className="bg-[#0f171f] border border-[#1f2a37] rounded-xl shadow-[0_6px_20px_rgba(0,0,0,0.4)] overflow-hidden">
+      
+        {/* Heading: text-center */}
+        <h2 className="text-center text-xl font-bold py-4 text-white">
+          All Tokens
+        </h2>
+        
+        {/* Table: w-full, border-collapse */}
+        <table className="w-full border-collapse">
+          <thead>
+            <tr>
+              {/* TH Styles: bg-[#111c27], text-[#b8c7d6], spacing, borders */}
+              <th className="bg-[#111c27] text-[#b8c7d6] text-[0.85rem] uppercase tracking-[0.6px] px-[18px] py-[14px] border-b border-[#1f2a37] text-left">
+                Token
+              </th>
+              <th className="bg-[#111c27] text-[#b8c7d6] text-[0.85rem] uppercase tracking-[0.6px] px-[18px] py-[14px] border-b border-[#1f2a37] text-left">
+                Price
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* Note: Row styles must be applied inside the TokenRow component */}
+            {tokens.map(t => <TokenRow key={t} token={t} price={prices[t]} />)}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
