@@ -8,8 +8,9 @@ const redis = createRedisClient();
 async function storePrice(tick) {
     const key = tick.symbol;
     const value = tick.price.toString();
-    await redis.set(key, value);
-    console.log(`[Redis] Updated: ${key} = ${value}`);
+    await redis.set(`latest:${tick.symbol}`, JSON.stringify(tick));
+    await redis.publish("live-updates", JSON.stringify(tick));
+    console.log(`[Redis] Updated: ${key}  ${value}`);
 } 
 
 async function runConsumer() {

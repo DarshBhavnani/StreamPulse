@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
 
   zookeeper:
@@ -102,13 +104,57 @@ services:
       KAFKA_BROKER: ${KAFKA_BROKER}
       KAFKA_TOPIC: ${KAFKA_TOPIC}
       KAFKA_GROUP_ID: ${KAFKA_POSTGRES_GROUP_ID}
-      
       PG_USER: ${PG_USER}
       PG_HOST: ${PG_HOST}
       PG_PASSWORD: ${PG_PASSWORD}
       PG_DATABASE: ${PG_DATABASE}
       PG_PORT: ${PG_PORT}
     restart: always
+
+  frontend-gateway:
+    build: ./frontend-gateway
+    container_name: frontend-gateway
+    depends_on:
+      - redis
+      - postgres
+    environment:
+      PORT: 3000
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_USER: ${PG_USER}
+      PG_PASSWORD: ${PG_PASSWORD}
+      PG_DATABASE: ${PG_DATABASE}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_CHANNEL: live-updates
+      REDIS_LATEST_PREFIX: latest
+      BROADCAST_INTERVAL_MS: 400
+    ports:
+      - "3000:3000"
+    restart: always
+
+  # Frontend (static site served by nginx)
+  frontend:
+    build:
+      context: ./frontend
+      # If you need to pass build ARGs for environment, add args: { VITE_API_URL: "http://localhost:3000" }
+    container_name: frontend
+    depends_on:
+      - frontend-gateway
+    environment:
+      # This environment var is for your own reference — for a Vite-built static site you typically
+      # bake the API URL into the build using VITE_API_URL. For quick local testing it's convenient
+      # to set it to http://localhost:3000 so the browser can talk to the gateway on the host.
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
+    ports:
+      - "80:80"
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
 volumes:
   pgdata:
